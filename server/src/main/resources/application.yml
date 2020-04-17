@@ -6,7 +6,7 @@ server:
 logging:
   level:
     org.springframework.web: ERROR
-    net.consensys: DEBUG
+    net.consensys: INFO
     net.consensys.configs: ERROR
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5p %c: %M - %m%n"
@@ -16,7 +16,8 @@ logging:
 ethereum:
   nodes:
   - name: default
-    url: ${ETHEREUM_NODE_URL:http://localhost:8545}
+    url: ${ETHEREUM_NODE_URL:http://localhost:8555}
+    pollInterval: 1000
     blockStrategy: POLL
     syncingThreshold: 100
     healthcheckInterval: 3000
@@ -60,7 +61,7 @@ database:
   type: MONGO
 
 broadcaster:
-  type: KAFKA
+  type: ROCKETMQ
   cache:
     expirationMillis: 6000000
   event:
@@ -89,10 +90,42 @@ kafka:
 spring:
   rabbitmq:
     host: ${RABBIT_ADDRESS:localhost}
+  # docker run -d --name sql_server_demo -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=reallyStrongPwd123' -p 1433:1433 microsoft/mssql-server-linux
+  datasource:
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/eventeum
+    username: root
+    password: root
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        dialect.storage_engine: innodb
+        #see: https://stackoverflow.com/questions/36583185/spring-data-jpa-could-not-initialize-proxy-no-session-with-methods-marke
+        enable_lazy_load_no_trans: true
+        # Hibernate ddl auto (create, create-drop, validate, update)
+    hibernate:
+      ddl-auto: update
+#     jdbc:
+#       lob:
+#         # For postgres, see: https://github.com/pgjdbc/pgjdbc/issues/1102
+#         non_contextual_creation: true
 
 rabbitmq:
   exchange: ${RABBIT_EXCHANGE:ThisIsAExchange}
   routingKeyPrefix: ${RABBIT_ROUTING:thisIsRoutingKey}
+
+rocket:
+  name:
+    addresses: ${ROCKETMQ_ADDRESSES:127.0.0.1:9876}
+  topic:
+    contractEvents: contract-events
+    blockEvents: block-events
+    eventeumEvents: eventeum-events
+    transactionEvents: transaction-events
+  groupId: eventeum_1
 
 management:
   endpoints:

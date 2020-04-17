@@ -19,4 +19,13 @@ public class JSON {
             return "<Unable to convert to JSON>";
         }
     }
+
+    public static <T> T parseJson(String json, Class<T> clz){
+        try{
+            return objectMapper.readValue(json, clz);
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

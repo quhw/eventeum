@@ -56,10 +56,34 @@ eventStore:
   eventPath: /event
 database:
   type: MONGO
-# type: SQL
+#  type: SQL
+
+spring:
+  # docker run -d --name sql_server_demo -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=reallyStrongPwd123' -p 1433:1433 microsoft/mssql-server-linux
+  datasource:
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/eventeum
+    username: root
+    password: root
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        dialect.storage_engine: innodb
+        #see: https://stackoverflow.com/questions/36583185/spring-data-jpa-could-not-initialize-proxy-no-session-with-methods-marke
+        enable_lazy_load_no_trans: true
+        # Hibernate ddl auto (create, create-drop, validate, update)
+    hibernate:
+      ddl-auto: update
+#     jdbc:
+#       lob:
+#         # For postgres, see: https://github.com/pgjdbc/pgjdbc/issues/1102
+#         non_contextual_creation: true
 
 broadcaster:
-  type: KAFKA
+  type: ROCKETMQ
   cache:
     expirationMillis: 6000000
   event:
@@ -96,3 +120,13 @@ kafka:
   security:
     protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
   retries: ${KAFKA_RETRIES:10}
+
+rocket:
+  name:
+    addresses: ${ROCKETMQ_ADDRESSES:127.0.0.1:9876}
+  topic:
+    contractEvents: contract-events
+    blockEvents: block-events
+    eventeumEvents: eventeum-events
+    transactionEvents: transaction-events
+  groupId: eventeum_1

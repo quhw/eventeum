@@ -6,7 +6,9 @@ import net.consensys.eventeum.dto.message.EventeumMessage;
 import net.consensys.eventeum.integration.KafkaSettings;
 import net.consensys.eventeum.integration.PulsarSettings;
 import net.consensys.eventeum.integration.RabbitSettings;
+import net.consensys.eventeum.integration.RocketSettings;
 import net.consensys.eventeum.integration.broadcast.blockchain.*;
+import net.consensys.eventeum.utils.RocketTemplate;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +23,7 @@ import org.springframework.retry.support.RetryTemplate;
 
 /**
  * Spring bean configuration for the BlockchainEventBroadcaster.
- *
+ * <p>
  * Registers a broadcaster bean based on the value of the broadcaster.type property.
  *
  * @author Craig Williams <craig.williams@consensys.net>
@@ -44,7 +46,7 @@ public class BlockchainEventBroadcasterConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnProperty(name= BROADCASTER_PROPERTY, havingValue="KAFKA")
+    @ConditionalOnProperty(name = BROADCASTER_PROPERTY, havingValue = "KAFKA")
     public BlockchainEventBroadcaster kafkaBlockchainEventBroadcaster(KafkaTemplate<String, EventeumMessage> kafkaTemplate,
                                                                       KafkaSettings kafkaSettings,
                                                                       CrudRepository<ContractEventFilter, String> filterRepository) {
@@ -56,7 +58,19 @@ public class BlockchainEventBroadcasterConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnProperty(name=BROADCASTER_PROPERTY, havingValue="HTTP")
+    @ConditionalOnProperty(name = BROADCASTER_PROPERTY, havingValue = "ROCKETMQ")
+    public BlockchainEventBroadcaster rocketBlockchainEventBroadcaster(RocketTemplate<String, EventeumMessage> rocketTemplate,
+                                                                       RocketSettings rocketSettings,
+                                                                       CrudRepository<ContractEventFilter, String> filterRepository) {
+        final BlockchainEventBroadcaster broadcaster =
+                new RocketBlockchainEventBroadcaster(rocketTemplate, rocketSettings, filterRepository);
+
+        return onlyOnceWrap(broadcaster);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(name = BROADCASTER_PROPERTY, havingValue = "HTTP")
     public BlockchainEventBroadcaster httpBlockchainEventBroadcaster(HttpBroadcasterSettings settings, RetryTemplate retryTemplate) {
         final BlockchainEventBroadcaster broadcaster =
                 new HttpBlockchainEventBroadcaster(settings, retryTemplate);
@@ -66,24 +80,23 @@ public class BlockchainEventBroadcasterConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnProperty(name=BROADCASTER_PROPERTY, havingValue="RABBIT")
+    @ConditionalOnProperty(name = BROADCASTER_PROPERTY, havingValue = "RABBIT")
     public BlockchainEventBroadcaster rabbitBlockChainEventBroadcaster(RabbitTemplate rabbitTemplate, RabbitSettings rabbitSettings) {
         final BlockchainEventBroadcaster broadcaster =
-                new RabbitBlockChainEventBroadcaster(rabbitTemplate,rabbitSettings);
+                new RabbitBlockChainEventBroadcaster(rabbitTemplate, rabbitSettings);
 
         return onlyOnceWrap(broadcaster);
     }
 
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnProperty(name=BROADCASTER_PROPERTY, havingValue="PULSAR")
+    @ConditionalOnProperty(name = BROADCASTER_PROPERTY, havingValue = "PULSAR")
     public BlockchainEventBroadcaster pulsarBlockChainEventBroadcaster(PulsarSettings settings, ObjectMapper mapper) throws PulsarClientException {
-    	final BlockchainEventBroadcaster broadcaster =
-    			new PulsarBlockChainEventBroadcaster(settings, mapper);
+        final BlockchainEventBroadcaster broadcaster =
+                new PulsarBlockChainEventBroadcaster(settings, mapper);
 
-    	return onlyOnceWrap(broadcaster);
+        return onlyOnceWrap(broadcaster);
     }
-
 
 
     private BlockchainEventBroadcaster onlyOnceWrap(BlockchainEventBroadcaster toWrap) {
